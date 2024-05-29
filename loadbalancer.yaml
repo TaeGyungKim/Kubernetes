@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ktg
+spec:
+  ports:
+    - port: 8888
+      targetPort: 80
+  selector:
+    app: ktg
+  type: LoadBalancer

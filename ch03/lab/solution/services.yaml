@@ -22,3 +22,5 @@ spec:
     app: lab-numbers-web
     version: v2
   type: LoadBalancer
+
+# 2018108254 김태경

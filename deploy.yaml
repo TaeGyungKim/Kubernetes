@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ktg
+  labels:
+    app: ktg
+spec:
+  selector:
+    matchLabels:
+      app: ktg
+  template:
+    metadata:
+      labels:
+        app: ktg
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.14-alpine
