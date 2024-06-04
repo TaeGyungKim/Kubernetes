@@ -38,5 +38,5 @@ spec:
             secretName: ch04-lab-db-secret
             defaultMode: 0400
             items:
-            - key: PASSWORD
+            - key: PASSWO
               path: password

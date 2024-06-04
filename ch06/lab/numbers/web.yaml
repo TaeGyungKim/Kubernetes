@@ -1,13 +1,18 @@
-apiVersion: v1
-kind: ReplicationController
+# 1. ReplicationController를 Deployment로 변환
+# 2. 매칭을 위해 matchLabels와 matchExpressions의 모든 요건이 충족되어야 됨
+#  2024-05-10 2018108254 김태경
+
+apiVersion: apps/v1 # v1 -> apps/v1
+kind: Deployment # 1.변경
 metadata:
   name: numbers-web
   labels:
     kiamol: ch06-lab
 spec:
   replicas: 2
-  selector:    
-    app: numbers-web
+  selector:
+    matchLabels: # 2. matchLabels 추가
+      app: numbers-web
   template:
     metadata:
       labels:

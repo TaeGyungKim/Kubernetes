@@ -1,0 +1,14 @@
+# 2018108254 김태경
+# 2024.04.16. 작성
+# ConfigMap 매니페스트
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adminer-configmap
+data:
+  ADMINER_DESIGN: "price"
+
+# ConfigMap은 key-value 쌍으로로 데이터를 저장하는 데 사용
+# 애플리케이션 코드와 별도로 구성 데이터를 설정하기 위해 사용
+#

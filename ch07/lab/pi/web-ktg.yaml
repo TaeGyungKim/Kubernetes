@@ -1,0 +1,85 @@
+# 1. 앱 컨테이너는 모든 파드가 사용하는 표준 시작 명령 init/startup.sh를 사용
+# 2. 파드는 앱 컨테이너에 포트 80을 사용
+# 3. 파드는 앱의 버전 번호를 반환하는 HTTP 서버를 위해 포트 8080을 퍼블리시
+#   3-1. HTTP 서버 필요 (sidecar)
+#   3-2. 앱의 버전 번호를 반환하는 기능 (command)
+#   3-3. 포트 8080을 퍼블리시(containerPort)
+#
+# 4. 앱 컨테이너에서 실행이 가능한 시작 스크립트 생성하고 사용 (initContainers)
+#   4-1. init/startup.sh를 사용할 수 있도록 실행 모드 부여
+#   4-2. 표준 시작 명령에 접근하기 위해 모든 파드가 사용할 수 있는 공간 volume 필요
+# 5. 포트 8080(또는 다른 곳)에 버전 API를 퍼블리시하는 무언가(정적 텍스트) 필요
+#   5-1. 무언가(정적 텍스트)를 생성 
+#     5-1-1. 이 무언가를 공유하는 공간 volume 필요
+#     5-1-2. 이 무언가에 접근할 권한 필요한 컨테이너 존재 (volumeMounts)
+#   5-2. 무언가가 포트 8080(또는 다른 곳)에 버전 API를 퍼블리시 제공하도록 함
+# 
+# Fix Error. 초기컨테이너 init-create-startup를 만들어서 /init/startup.sh가 EmptyDir에 있도록 함.
+#
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pi-web
+  labels:
+    kiamol: ch07-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pi-web
+  template:
+    metadata:
+      labels:
+        app: pi-web
+    spec:
+      initContainers:
+      # Fix Error :  /init/startup.sh가 EmptyDir에 있도록 함
+        - name: init-create-startup
+          image: kiamol/ch03-sleep
+          command: ['sh', '-c', "echo '#!/bin/sh\ndotnet Pi.Web.dll -m web' > /init/startup.sh"]
+          volumeMounts:
+            - name: init
+              mountPath: "/init"
+        # 4-1. init/startup.sh를 사용할 수 있도록 실행 모드 부여
+        - name: init-active-startup
+          image: kiamol/ch03-sleep
+          command: ['sh', '-c', "chmod +x /init/startup.sh"] 
+          volumeMounts: # 4-2. 표준 시작 명령에 접근하기 위한 공간
+            - name: init
+              mountPath: "/init"
+        # 5-1. 무언가(정적 텍스트)를 생성 
+        - name: init-version
+          image: kiamol/ch03-sleep
+          command: ['sh', '-c',"echo 'version test' > /init/version.txt"]
+          volumeMounts:
+            - name: init
+              mountPath: "/init"
+
+      containers:
+        - name: web
+          image: kiamol/ch05-pi
+          command: ["/init/startup.sh"] # 1. init/startup.sh로 변경
+          ports:
+            - containerPort: 80 # 2. 앱 컨테이너는 포트 80 사용
+              name: http
+          volumeMounts: # 4-2. 표준 시작 명령에 접근하기 위한 공간
+            - name: init
+              mountPath: "/init"
+        - name: server # 3. 앱 버전 번호 반환하는 sidecar(사이드카)
+        # image는 timecheck-good-citizen.yaml에서 사용한 image인 ch03-sleep 사용
+          image: kiamol/ch03-sleep 
+          # 3-2. 앱의 버전 번호를 반환
+          # 명령어는 timecheck-good-citizen.yaml 참조 (netcat 사용)
+          # 반환하는 파일은 initContainer에서 생성하고 version.txt로 명명
+          command: ['sh', '-c', "while true; do echo -e 'HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 17\n\n$(cat /init/version.txt)' | nc -l -p 8080; done"]
+          ports: 
+            - containerPort: 8080 # 3-3. 포트 8080을 퍼블리시(containerPort)
+              name: http
+          volumeMounts: # 5-1-1. 무언가를 읽어와야 함
+            - name: init
+              mountPath: "/init" 
+      volumes: # 4-2, 5-1-1. 표준 시작 명령 및 무언가를 공유하는 볼륨
+        - name: init # 볼륨의 이름은 init
+          emptyDir: {} 
+

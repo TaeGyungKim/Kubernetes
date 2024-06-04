@@ -1,3 +1,4 @@
+# 메인 애플리케이션
 apiVersion: v1
 kind: Service
 metadata:
@@ -27,3 +28,18 @@ spec:
         - name: web
           image: adminer:4.7-standalone
           args: ["php", "-S", "0.0.0.0:8080", "-t", "/var/www/html"]
+          env: # 환경변수 정의
+            - name: ADMINER_DESIGN # 디자인의 경우
+              valueFrom:
+                configMapKeyRef:
+                  name: adminer-configmap #이 값의 configMap
+                  key: ADMINER_DESIGN # 키값
+            - name: ADMINER_DEFAULT_SERVER # 초기 서버의 경우
+              valueFrom:
+                secretKeyRef:
+                  name: adminer-secret
+                  key: ADMINER_DEFAULT_SERVER
+
+# 2018108254 김태경
+# 2024.04.16 내용 수정
+# adminer-web에 configMap, secret 추가
